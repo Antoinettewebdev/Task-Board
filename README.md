@@ -1,69 +1,129 @@
-# React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Currently, two official plugins are available:
+# 🚀 TaskBoard Todo-App – Launch Website
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+A modern, responsive launch page for the **TaskBoard Todo-App**, built with **React**, **Tailwind CSS**, and **TypeScript**. This site serves as a smart and clean promotional platform for users to explore TaskBoard and join the waitlist for a cycle-tracking productivity tool.
 
-## Expanding the ESLint configuration
+**🔗 Live Demo:** *Coming Soon*
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 📌 Table of Contents
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+* [📦 Features](#-features)
+* [🛠 Tech Stack](#-tech-stack)
+* [⚙️ Setup Instructions](#️-setup-instructions)
+* [💻 Running the App](#-running-the-app)
+* [📋 Project Structure](#-project-structure)
+* [📸 Screenshots](#-screenshots)
+* [🚀 Deployment](#-deployment)
+* [👩‍💻 Author](#-author)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## 📦 Features
+
+* 🚀 Hero section with clear app call-to-action
+* 📥 Waitlist email input form
+* 🌐 Responsive layout for all screen sizes
+* 🔁 Smooth routing with TanStack Router
+* 🧩 Modular and reusable components
+* 🎯 Built-in form validation with TanStack Form
+
+---
+
+## 🛠 Tech Stack
+
+* ⚛ **React (Vite)**
+* 🧠 **TypeScript**
+* 🎨 **Tailwind CSS**
+* 🧩 **Lucide React** – Icon library
+* 🛣 **TanStack Router**
+* ✅ **TanStack Form**
+* ⚡ **Bun** – JavaScript runtime for blazing-fast builds
+
+---
+
+## ⚙️ Setup Instructions
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/antoinettedev/taskboard
+cd taskboard
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Install Dependencies
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+bun install
 ```
+
+> Make sure you have [Bun](https://bun.sh/docs/installation) installed.
+
+---
+
+## 💻 Running the App
+
+To start the development server:
+
+```bash
+bun run dev
+```
+
+Open your browser and navigate to: [http://localhost:5173](http://localhost:5173)
+
+The app supports hot reloading — changes will reflect automatically.
+
+---
+
+## 📋 Project Structure
+
+```
+taskboard/
+│
+├── src/
+│   ├── components/      # Reusable UI elements (Navbar, Footer, etc.)
+│   ├── pages/           # Page-level routes (Home, About, etc.)
+│   ├── assets/          # Images, icons, and static resources
+│   ├── Types/           # TypeScript types
+│   ├── lib/             # PocketBase and utility functions
+│
+├── public/              # Static files
+├── index.html           # Entry HTML
+├── vite.config.ts       # Vite configuration
+└── README.md
+```
+
+---
+
+## 📸 Screenshots
+
+*👉 Add screenshots here to visually showcase your app (optional but recommended).*
+
+---
+
+## 🚀 Deployment
+
+This site is **optimized for deployment** via:
+
+* [Vercel](https://vercel.com/)
+* [Netlify](https://netlify.com/)
+
+### 🔧 Manual Deployment
+
+1. Push your code to a GitHub repository
+2. Connect your repo to Vercel/Netlify
+3. Set build command to `bun run build` and output directory to `dist`
+
+---
+
+## 👩‍💻 Author
+
+**Antoinette Obeng Duku**
+💼 Frontend Developer | 💡 Innovator
+📫 [LinkedIn](https://linkedin.com/in/your-profile) | 🌐 [Portfolio](https://your-portfolio.com) *(optional)*
+
+
+
+
