@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { TodoItem } from "./TodoItem";
+import { TodoItem } from "@/components/TodoItem";
 import type { Todo, TodoVisibility } from "@/Types/Todo";
 import { pb } from "@/lib/PocketBase";
 import { useNavigate } from "@tanstack/react-router";
@@ -11,11 +11,12 @@ export const TodoList = () => {
   const navigate = useNavigate();
   const isLoggedIn = !!pb.authStore.token;
   const userId = pb.authStore.model?.id;
+
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState("");
   const [newVisibility, setNewVisibility] = useState<TodoVisibility>("public");
 
-  // Fetch private and public todos on mount
+  // ✅ Fetch todos on mount
   useEffect(() => {
     const fetchTodos = async () => {
       try {
@@ -40,32 +41,44 @@ export const TodoList = () => {
     fetchTodos();
   }, [userId]);
 
-  // Realtime subscription for public todos
+  // ✅ PocketBase realtime updates (public + user's private todos)
   useEffect(() => {
-    pb.collection("todos").subscribe("*", (e) => {
-      const record = e.record as unknown as Todo;
+    let unsubscribe: () => void;
 
-      if (record.visibility === "public") {
+    const subscribeToTodos = async () => {
+      unsubscribe = await pb.collection("todos").subscribe("*", (e) => {
+        const record = e.record as unknown as Todo;
+
+        const isUserPrivate = record.visibility === "private" && record.authorId === userId;
+        const isPublic = record.visibility === "public";
+
+        if (!isPublic && !isUserPrivate) return;
+
         setTodos((prev) => {
-          const exists = prev.some((t) => t.id === record.id);
+          if (e.action === "create") {
+            const exists = prev.some((t) => t.id === record.id);
+            return exists ? prev : [record, ...prev];
+          }
 
-          if (e.action === "create" && !exists) {
-            return [record, ...prev];
-          } else if (e.action === "update") {
+          if (e.action === "update") {
             return prev.map((t) => (t.id === record.id ? record : t));
-          } else if (e.action === "delete") {
+          }
+
+          if (e.action === "delete") {
             return prev.filter((t) => t.id !== record.id);
           }
 
           return prev;
         });
-      }
-    });
+      });
+    };
+
+    subscribeToTodos();
 
     return () => {
-      pb.collection("todos").unsubscribe("*");
+      if (unsubscribe) unsubscribe();
     };
-  }, []);
+  }, [userId]);
 
   const handleAddTodo = async () => {
     if (!newTodo.trim()) return;
@@ -80,15 +93,10 @@ export const TodoList = () => {
         lastEditedAt: new Date().toISOString(),
       });
 
-      setNewTodo(""); // Let real-time add it to UI
+      setNewTodo(""); // Let realtime handle the UI
     } catch (err) {
       console.error("Create failed", err);
     }
-  };
-
-  const handleLogout = () => {
-    pb.authStore.clear();
-    navigate({ to: "/login" });
   };
 
   const handleToggleCompleted = async (id: string) => {
@@ -102,21 +110,38 @@ export const TodoList = () => {
 
     try {
       await pb.collection("todos").update(id, updated);
-      setTodos((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, ...updated } : t))
-      );
+      // No local update needed, realtime handles it
     } catch (err) {
-      console.error("Update failed", err);
+      console.error("Toggle failed", err);
+    }
+  };
+
+  const handleEdit = async (id: string, newTitle: string) => {
+    if (!newTitle.trim()) return;
+
+    try {
+      await pb.collection("todos").update(id, {
+        title: newTitle,
+        lastEditedAt: new Date().toISOString(),
+      });
+      // No local update needed, realtime handles it
+    } catch (err) {
+      console.error("Edit failed", err);
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await pb.collection("todos").delete(id);
-      setTodos((prev) => prev.filter((t) => t.id !== id));
+      // No local update needed, realtime handles it
     } catch (err) {
       console.error("Delete failed", err);
     }
+  };
+
+  const handleLogout = () => {
+    pb.authStore.clear();
+    navigate({ to: "/login" });
   };
 
   return (
@@ -167,6 +192,7 @@ export const TodoList = () => {
                   isAuthor={todo.authorId === userId}
                   onToggleCompleted={handleToggleCompleted}
                   onDelete={handleDelete}
+                  onEdit={handleEdit} // ✅ FIX: edit handler passed
                 />
               ))
             )}
