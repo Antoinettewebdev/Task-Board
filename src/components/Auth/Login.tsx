@@ -10,30 +10,28 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
-import type { RegisterFormType } from "@/Types/RegisterFormType";
+import type { LoginFormValues } from "@/Types/LoginTypes";
 import { useState } from "react";
 import { pb } from "@/lib/PocketBase";
 
-export const Register =  () => {
+export const Login = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Google Sign Up handler
-  const handleGoogleSignUp = async () => {
+  // Google Login handler
+  const handleGoogleLogin = async () => {
     setFormError(null);
     setGoogleLoading(true);
     try {
-      // This will open a popup for Google OAuth
       await pb.collection("users").authWithOAuth2({ provider: "google" });
-      // After successful auth, you may want to redirect
       navigate({ to: "/todos" });
     } catch (err) {
       if (err instanceof Error && err.message) {
         setFormError(err.message);
       } else {
-        setFormError("Google sign up failed. Please try again.");
+        setFormError("Google login failed. Please try again.");
       }
     } finally {
       setGoogleLoading(false);
@@ -44,23 +42,20 @@ export const Register =  () => {
     defaultValues: {
       email: "",
       password: "",
-      confirmPassword: "",
     },
-    onSubmit: async ({ value }: { value: RegisterFormType }) => {
+    onSubmit: async ({ value }: { value: LoginFormValues }) => {
       setFormError(null);
       setLoading(true);
       try {
-        await pb.collection("users").create({
-          email: value.email,
-          password: value.password,
-          passwordConfirm: value.password,
-        });
-        navigate({ to: "/login" });
+        await pb
+          .collection("users")
+          .authWithPassword(value.email, value.password);
+        navigate({ to: "/todos" });
       } catch (err) {
         if (err instanceof Error && err.message) {
           setFormError(err.message);
         } else {
-          setFormError("Registration failed. Please try again.");
+          setFormError("Invalid credentials or email not verified.");
         }
       } finally {
         setLoading(false);
@@ -74,9 +69,9 @@ export const Register =  () => {
         <div className=" flex flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Create an account</CardTitle>
+              <CardTitle>Login to your account</CardTitle>
               <CardDescription>
-                Enter your details to create a new account
+                Enter your email below to login to your account
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -88,6 +83,7 @@ export const Register =  () => {
                 className="flex flex-col gap-6"
               >
                 {/* Email Field */}
+                {/* Email Input Textfield */}
                 <form.Field
                   name="email"
                   validators={{
@@ -119,94 +115,75 @@ export const Register =  () => {
                     </div>
                   )}
                 />
+
                 {/* Password Field */}
                 <form.Field
                   name="password"
                   validators={{
                     onChange: ({ value }) => {
                       if (!value) return "Password is required";
-                      if (value.length < 8)
-                        return "Password must be at least 8 characters";
-                    },
-                  }}
-                  children={(field) => (
-                    <div className="grid gap-3">
-                      <div className="flex items-center">
-                        <Label htmlFor={field.name}>Password</Label>
-                      </div>
-                      <Input
-                        id={field.name}
-                        type="password"
-                        placeholder=""
-                        required
-                        value={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        disabled={loading || googleLoading}
-                      />
-                      {field.state.meta.errors && (
-                        <div className="text-red-500 text-sm">
-                          {field.state.meta.errors}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                />
-                {/* Confirm Password Field */}
-                <form.Field
-                  name="confirmPassword"
-                  validators={{
-                    onChange: ({ value }) => {
                       if (!value) return "Password is required";
                       if (value.length < 8)
                         return "Password must be at least 8 characters";
                     },
                   }}
                   children={(field) => (
-                    <div className="grid gap-3">
+                    <div className="grid gap-2">
                       <div className="flex items-center">
-                        <Label htmlFor={field.name}>Confirm Password</Label>
+                        <Label htmlFor={field.name}>Password</Label>
+                        <Link
+                          to="/forgotPassword"
+                          className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                        >
+                          Forgot your password?
+                        </Link>
                       </div>
                       <Input
-                        id={field.name}
+                        id="password"
                         type="password"
-                        placeholder=""
-                        required
+                        placeholder="*"
                         value={field.state.value}
                         onChange={(e) => field.handleChange(e.target.value)}
-                        disabled={loading || googleLoading}
+                        required
                       />
-                      {field.state.meta.errors && (
-                        <div className="text-red-500 text-sm">
-                          {field.state.meta.errors}
-                        </div>
-                      )}
                     </div>
                   )}
                 />
+
                 {/* Form Error */}
                 {formError && (
                   <div className="text-red-500 text-center text-sm">
                     {formError}
                   </div>
                 )}
+
                 <div className="flex flex-col gap-3">
-                  <Button type="submit" className="w-full" disabled={loading || googleLoading}>
-                    {loading ? "Signing up..." : "Sign Up"}
+                  <Button
+                    className="w-full"
+                    type="submit"
+                    disabled={loading || googleLoading}
+                  >
+                    {loading ? "Logging in..." : "Login"}
                   </Button>
                   <Button
                     variant="outline"
                     className="w-full"
                     type="button"
                     disabled={loading || googleLoading}
-                    onClick={handleGoogleSignUp}
+                    onClick={handleGoogleLogin}
                   >
-                    {googleLoading ? "Signing up with Google..." : "Sign Up with Google"}
+                    {googleLoading
+                      ? "Logging in with Google..."
+                      : "Login with Google"}
                   </Button>
                 </div>
                 <div className="mt-4 text-center text-sm">
-                  Already have an account?{""}
-                  <Link to="/login" className="text-blue-600 hover:underline">
-                    Log In
+                  Don’t have an account?{" "}
+                  <Link
+                    to="/register"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Sign up
                   </Link>
                 </div>
               </form>
@@ -216,4 +193,4 @@ export const Register =  () => {
       </div>
     </div>
   );
-}
+};

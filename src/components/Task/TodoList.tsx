@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { TodoItem } from "@/components/TodoItem";
+import { TodoItem } from "@/components/Task/TodoItem";
 import type { Todo, TodoVisibility } from "@/Types/Todo";
 import { pb } from "@/lib/PocketBase";
 import { useNavigate } from "@tanstack/react-router";
@@ -15,8 +15,9 @@ export const TodoList = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState("");
   const [newVisibility, setNewVisibility] = useState<TodoVisibility>("public");
+  const [viewFilter, setViewFilter] = useState<"all" | "public" | "private">("all");
 
-  // ✅ Fetch todos on mount
+  // ✅ Fetch all todos on mount
   useEffect(() => {
     const fetchTodos = async () => {
       try {
@@ -41,8 +42,10 @@ export const TodoList = () => {
     fetchTodos();
   }, [userId]);
 
-  // ✅ PocketBase realtime updates (public + user's private todos)
+  // ✅ PocketBase realtime updates (fix: wait for userId before subscribing)
   useEffect(() => {
+    if (!userId) return;
+
     let unsubscribe: () => void;
 
     const subscribeToTodos = async () => {
@@ -89,11 +92,11 @@ export const TodoList = () => {
         visibility: newVisibility,
         completed: false,
         authorId: userId,
-        authorName: pb.authStore.record?.email ?? "Anonymous",
+        authorName: pb.authStore.model?.email ?? "Anonymous",
         lastEditedAt: new Date().toISOString(),
       });
 
-      setNewTodo(""); // Let realtime handle the UI
+      setNewTodo(""); // Let realtime handle UI update
     } catch (err) {
       console.error("Create failed", err);
     }
@@ -103,14 +106,11 @@ export const TodoList = () => {
     const todo = todos.find((t) => t.id === id);
     if (!todo) return;
 
-    const updated = {
-      completed: !todo.completed,
-      lastEditedAt: new Date().toISOString(),
-    };
-
     try {
-      await pb.collection("todos").update(id, updated);
-      // No local update needed, realtime handles it
+      await pb.collection("todos").update(id, {
+        completed: !todo.completed,
+        lastEditedAt: new Date().toISOString(),
+      });
     } catch (err) {
       console.error("Toggle failed", err);
     }
@@ -124,7 +124,6 @@ export const TodoList = () => {
         title: newTitle,
         lastEditedAt: new Date().toISOString(),
       });
-      // No local update needed, realtime handles it
     } catch (err) {
       console.error("Edit failed", err);
     }
@@ -133,7 +132,6 @@ export const TodoList = () => {
   const handleDelete = async (id: string) => {
     try {
       await pb.collection("todos").delete(id);
-      // No local update needed, realtime handles it
     } catch (err) {
       console.error("Delete failed", err);
     }
@@ -143,6 +141,14 @@ export const TodoList = () => {
     pb.authStore.clear();
     navigate({ to: "/login" });
   };
+
+  const filteredTodos = todos.filter((todo) => {
+    if (viewFilter === "all") return true;
+    if (viewFilter === "public") return todo.visibility === "public";
+    if (viewFilter === "private")
+      return todo.visibility === "private" && todo.authorId === userId;
+    return false;
+  });
 
   return (
     <div className="flex flex-col items-center h-screen bg-muted px-4">
@@ -164,14 +170,15 @@ export const TodoList = () => {
           <CardTitle>Todo List</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-6 flex gap-2">
+          {/* Add Todo Form */}
+          <div className="mb-4 flex gap-2">
             <Input
               placeholder="Enter a task..."
               value={newTodo}
               onChange={(e) => setNewTodo(e.target.value)}
             />
             <select
-              className="rounded border px-2 py-1"
+              className="rounded border px-2 py-1 text-sm"
               value={newVisibility}
               onChange={(e) => setNewVisibility(e.target.value as TodoVisibility)}
             >
@@ -181,18 +188,32 @@ export const TodoList = () => {
             <Button onClick={handleAddTodo}>Add</Button>
           </div>
 
+          {/* Filter Controls */}
+          <div className="flex justify-end mb-4">
+            <select
+              className="rounded border px-2 py-1 text-sm"
+              value={viewFilter}
+              onChange={(e) => setViewFilter(e.target.value as "all" | "public" | "private")}
+            >
+              <option value="all">All</option>
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+            </select>
+          </div>
+
+          {/* Todo Items */}
           <div className="space-y-2">
-            {todos.length === 0 ? (
+            {filteredTodos.length === 0 ? (
               <p className="text-center text-muted-foreground">No todos yet</p>
             ) : (
-              todos.map((todo) => (
+              filteredTodos.map((todo) => (
                 <TodoItem
                   key={todo.id}
                   {...todo}
                   isAuthor={todo.authorId === userId}
                   onToggleCompleted={handleToggleCompleted}
                   onDelete={handleDelete}
-                  onEdit={handleEdit} // ✅ FIX: edit handler passed
+                  onEdit={handleEdit}
                 />
               ))
             )}
