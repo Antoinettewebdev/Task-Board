@@ -1,4 +1,4 @@
- import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { useNavigate } from "@tanstack/react-router";
 export const TodoList = () => {
   const navigate = useNavigate();
   const isLoggedIn = !!pb.authStore.token;
-  const userId = pb.authStore.model?.id;
+  const userId = pb.authStore.record?.id;
 
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState("");
@@ -89,7 +89,7 @@ export const TodoList = () => {
         visibility: newVisibility,
         completed: false,
         authorId: userId,
-        authorName: pb.authStore.model?.email ?? "Anonymous",
+        authorName: pb.authStore.record?.email ?? "Anonymous",
         lastEditedAt: new Date().toISOString(),
       });
 

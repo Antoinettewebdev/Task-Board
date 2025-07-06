@@ -64,9 +64,7 @@ export const TodoItem = ({
         {visibility === "public" && (
           <p className="text-xs text-muted-foreground">
             By: {authorName ?? "Anonymous"} • Last edited:{" "}
-            {lastEditedAt
-              ? new Date(lastEditedAt).toLocaleString()
-              : "Unknown"}
+            {lastEditedAt ? new Date(lastEditedAt).toLocaleString() : "Unknown"}
           </p>
         )}
       </div>
