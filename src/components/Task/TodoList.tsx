@@ -210,6 +210,7 @@ export const TodoList = () => {
                 <TodoItem
                   key={todo.id}
                   {...todo}
+                  created={todo.created} 
                   isAuthor={todo.authorId === userId}
                   onToggleCompleted={handleToggleCompleted}
                   onDelete={handleDelete}

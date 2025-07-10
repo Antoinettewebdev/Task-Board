@@ -10,6 +10,7 @@ export const TodoItem = ({
   visibility,
   authorName,
   lastEditedAt,
+  created,
   isAuthor,
   onToggleCompleted,
   onDelete,
@@ -19,9 +20,9 @@ export const TodoItem = ({
   title: string;
   completed: boolean;
   visibility: "public" | "private";
-  authorId?: string;
   authorName?: string;
   lastEditedAt?: string;
+  created: string;
   isAuthor: boolean;
   onToggleCompleted: (id: string) => void;
   onDelete: (id: string) => void;
@@ -36,6 +37,10 @@ export const TodoItem = ({
     }
     setIsEditing(false);
   };
+
+  const isEdited =
+    lastEditedAt &&
+    new Date(lastEditedAt).toISOString() !== new Date(created).toISOString();
 
   return (
     <div className="flex items-center justify-between bg-white p-3 rounded shadow w-full">
@@ -63,10 +68,17 @@ export const TodoItem = ({
         )}
 
         {visibility === "public" && (
-          <p className="text-xs text-muted-foreground">
-            By: {authorName?.trim() || pb.authStore.model?.email} • Last edited:{" "}
-            {lastEditedAt ? new Date(lastEditedAt).toLocaleString() : "Unknown"}
-          </p>
+          <>
+            <p className="text-xs text-muted-foreground">
+              Created: {new Date(created).toLocaleString()}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              By: {authorName?.trim() || pb.authStore.model?.email}
+              {isEdited && (
+                <> • Last edited: {new Date(lastEditedAt!).toLocaleString()}</>
+              )}
+            </p>
+          </>
         )}
       </div>
 

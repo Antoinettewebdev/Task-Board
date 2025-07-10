@@ -7,6 +7,7 @@ export type Todo = {
   authorId: string;
   authorName?: string;
   lastEditedAt?: string;
+  created: string;
 };
 
 export type CreateTodoInput = {
