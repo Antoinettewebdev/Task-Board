@@ -1,6 +1,6 @@
 
 
-# 🚀 TaskBoard Todo-App – Launch Website
+# 🚀 TaskBoard Todo-App 
 
 A modern, responsive launch page for the **TaskBoard Todo-App**, built with **React**, **Tailwind CSS**, and **TypeScript**. This site serves as a smart and clean promotional platform for users to explore TaskBoard and join the waitlist for a cycle-tracking productivity tool.
 
