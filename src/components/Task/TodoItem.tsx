@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { pb } from "@/lib/PocketBase"; // ✅ import pb to get current email
 
 export const TodoItem = ({
   id,
@@ -73,7 +72,7 @@ export const TodoItem = ({
               Created: {new Date(created).toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground">
-              By: {authorName?.trim() || pb.authStore.model?.email}
+              By: {authorName}
               {isEdited && (
                 <> • Last edited: {new Date(lastEditedAt!).toLocaleString()}</>
               )}

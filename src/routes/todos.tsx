@@ -1,6 +1,6 @@
 import { Route } from "@tanstack/react-router";
 import { rootRoute } from "@/routes/root";
-import { TodoList } from "@/components/Task/TodoList";
+import { TodoList } from "@/components/task/TodoList";
 
 export const todolistRoute = new Route({
   getParentRoute: () => rootRoute,

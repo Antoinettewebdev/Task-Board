@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { TodoItem } from "@/components/Task/TodoItem";
-import type { Todo, TodoVisibility } from "@/Types/Todo";
-import { pb } from "@/lib/PocketBase";
+import { TodoItem } from "@/components/task/TodoItem";
+import type { Todo, TodoVisibility } from "@/type/Todo";
+import { pb } from "@/lib/pocketbase";
 import { useNavigate } from "@tanstack/react-router";
 
 export const TodoList = () => {
@@ -15,15 +15,17 @@ export const TodoList = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState("");
   const [newVisibility, setNewVisibility] = useState<TodoVisibility>("public");
-  const [viewFilter, setViewFilter] = useState<"all" | "public" | "private">("all");
+  const [viewFilter, setViewFilter] = useState<"all" | "public" | "private">(
+    "all"
+  );
 
-  // ✅ Fetch all todos on mount
   useEffect(() => {
     const fetchTodos = async () => {
       try {
-        const publicTodos = await pb
-          .collection("todos")
-          .getFullList<Todo>({ filter: 'visibility = "public"', sort: "-created" });
+        const publicTodos = await pb.collection("todos").getFullList<Todo>({
+          filter: 'visibility = "public"',
+          sort: "-created",
+        });
 
         const privateTodos = userId
           ? await pb.collection("todos").getFullList<Todo>({
@@ -42,7 +44,6 @@ export const TodoList = () => {
     fetchTodos();
   }, [userId]);
 
-  // ✅ PocketBase realtime updates (fix: wait for userId before subscribing)
   useEffect(() => {
     if (!userId) return;
 
@@ -52,7 +53,8 @@ export const TodoList = () => {
       unsubscribe = await pb.collection("todos").subscribe("*", (e) => {
         const record = e.record as unknown as Todo;
 
-        const isUserPrivate = record.visibility === "private" && record.authorId === userId;
+        const isUserPrivate =
+          record.visibility === "private" && record.authorId === userId;
         const isPublic = record.visibility === "public";
 
         if (!isPublic && !isUserPrivate) return;
@@ -92,7 +94,7 @@ export const TodoList = () => {
         visibility: newVisibility,
         completed: false,
         authorId: userId,
-        authorName: pb.authStore.model?.email ?? "Anonymous",
+        authorName: pb.authStore.record?.email,
         lastEditedAt: new Date().toISOString(),
       });
 
@@ -152,7 +154,6 @@ export const TodoList = () => {
 
   return (
     <div className="flex flex-col items-center h-screen bg-muted px-4">
-      {/* Top NavBar */}
       <nav className="w-full flex justify-between items-center py-4 px-4 shadow bg-white fixed top-0 left-0 z-10">
         <span className="text-xl font-bold text-indigo-700">TaskBoard</span>
         {isLoggedIn && (
@@ -162,7 +163,6 @@ export const TodoList = () => {
         )}
       </nav>
 
-      {/* Spacer */}
       <div className="h-20" />
 
       <Card className="w-full max-w-md">
@@ -170,7 +170,6 @@ export const TodoList = () => {
           <CardTitle>Todo List</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Add Todo Form */}
           <div className="mb-4 flex gap-2">
             <Input
               placeholder="Enter a task..."
@@ -180,7 +179,9 @@ export const TodoList = () => {
             <select
               className="rounded border px-2 py-1 text-sm"
               value={newVisibility}
-              onChange={(e) => setNewVisibility(e.target.value as TodoVisibility)}
+              onChange={(e) =>
+                setNewVisibility(e.target.value as TodoVisibility)
+              }
             >
               <option value="public">Public</option>
               <option value="private">Private</option>
@@ -188,12 +189,13 @@ export const TodoList = () => {
             <Button onClick={handleAddTodo}>Add</Button>
           </div>
 
-          {/* Filter Controls */}
           <div className="flex justify-end mb-4">
             <select
               className="rounded border px-2 py-1 text-sm"
               value={viewFilter}
-              onChange={(e) => setViewFilter(e.target.value as "all" | "public" | "private")}
+              onChange={(e) =>
+                setViewFilter(e.target.value as "all" | "public" | "private")
+              }
             >
               <option value="all">All</option>
               <option value="public">Public</option>
@@ -201,7 +203,6 @@ export const TodoList = () => {
             </select>
           </div>
 
-          {/* Todo Items */}
           <div className="space-y-2">
             {filteredTodos.length === 0 ? (
               <p className="text-center text-muted-foreground">No todos yet</p>
@@ -210,7 +211,7 @@ export const TodoList = () => {
                 <TodoItem
                   key={todo.id}
                   {...todo}
-                  created={todo.created} 
+                  created={todo.created}
                   isAuthor={todo.authorId === userId}
                   onToggleCompleted={handleToggleCompleted}
                   onDelete={handleDelete}
