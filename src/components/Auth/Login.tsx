@@ -42,9 +42,9 @@ export const Login = () => {
               <form.Field name="email" validators={{ onChange: validateEmail }}>
                 {(field) => (
                   <div className="grid gap-3">
-                    <Label htmlFor={field.name}>Email</Label>
+                    <Label htmlFor="email">Email</Label>
                     <Input
-                      id={field.name}
+                      id="email"
                       type="email"
                       placeholder="m@example.com"
                       required
@@ -65,7 +65,7 @@ export const Login = () => {
                 {(field) => (
                   <div className="grid gap-2">
                     <div className="flex items-center">
-                      <Label htmlFor={field.name}>Password</Label>
+                      <Label htmlFor="password">Password</Label>
                       <Link
                         to="/forget-password"
                         className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
@@ -74,7 +74,7 @@ export const Login = () => {
                       </Link>
                     </div>
                     <Input
-                      id={field.name}
+                      id="password"
                       type="password"
                       placeholder=""
                       required

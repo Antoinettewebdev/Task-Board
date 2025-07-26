@@ -1,3 +1,4 @@
+// src/components/TodoList.tsx
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
@@ -13,11 +14,9 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { useTodos } from "@/hooks/todos/useTodo";
 import { pb } from "@/lib/pocketbase";
 import type { TodoVisibility } from "@/type/Todo";
-// import toast from 'sonner' or 'react-hot-toast'
-import { toast } from "sonner"; // Importing toast from sonner
+import { useTodoAction} from "@/hooks/todos/useTodoAction"; // Import our business logic hook
 
 const TODOS_PER_PAGE = 5;
 
@@ -25,9 +24,8 @@ export const TodoList = () => {
   const navigate = useNavigate();
   const userId = pb.authStore.model?.id;
   const isLoggedIn = !!userId;
-  // use toast directly from 'sonner'
-  // const { Toast } = toast(); // 👈 Get toast function
 
+  // Local state for inputs and filters
   const [newTodo, setNewTodo] = useState("");
   const [newVisibility, setNewVisibility] = useState<TodoVisibility>("public");
   const [viewFilter, setViewFilter] = useState<"all" | "public" | "private">("all");
@@ -35,79 +33,11 @@ export const TodoList = () => {
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { todos, createTodo, updateTodo, deleteTodo } = useTodos(userId);
+  // Get all business logic functions from our custom hook
+  const { todos, handleAddTodo, handleToggleCompleted, handleEdit, handleDelete } =
+    useTodoAction();
 
-  const handleAddTodo = () => {
-    if (!newTodo.trim()) return;
-
-    createTodo.mutate(
-      {
-        title: newTodo.trim(),
-        visibility: newVisibility,
-        completed: false,
-        authorId: userId,
-        authorName: pb.authStore.model?.email,
-        lastEditedAt: new Date().toISOString(),
-      },
-      {
-        onSuccess: () => {
-          toast("Todo created successfully!");
-          setNewTodo("");
-        },
-      }
-    );
-  };
-
-  const handleToggleCompleted = (id: string) => {
-    const todo = todos.find((t) => t.id === id);
-    if (!todo) return;
-
-    updateTodo.mutate(
-      {
-        id,
-        updates: {
-          completed: !todo.completed,
-          lastEditedAt: new Date().toISOString(),
-        },
-      },
-      {
-        onSuccess: () => {
-          toast(`Todo marked as ${!todo.completed ? "completed" : "incomplete"}`);
-        },
-      }
-    );
-  };
-
-  const handleEdit = (id: string, newTitle: string) => {
-    updateTodo.mutate(
-      {
-        id,
-        updates: {
-          title: newTitle,
-          lastEditedAt: new Date().toISOString(),
-        },
-      },
-      {
-        onSuccess: () => {
-          toast("Todo updated successfully!");
-        },
-      }
-    );
-  };
-
-  const handleDelete = (id: string) => {
-    deleteTodo.mutate(id, {
-      onSuccess: () => {
-        toast("Todo deleted successfully!");
-      },
-    });
-  };
-
-  const handleLogout = () => {
-    pb.authStore.clear();
-    navigate({ to: "/login" });
-  };
-
+  // Filter and sort todos as needed
   const filteredTodos = todos
     .filter((todo) => {
       if (viewFilter === "public") return todo.visibility === "public";
@@ -128,6 +58,12 @@ export const TodoList = () => {
     (currentPage - 1) * TODOS_PER_PAGE,
     currentPage * TODOS_PER_PAGE
   );
+
+  // Handler for logout (still considered UI logic)
+  const handleLogout = () => {
+    pb.authStore.clear();
+    navigate({ to: "/login" });
+  };
 
   return (
     <div className="flex flex-col items-center h-screen bg-muted px-4">
@@ -177,7 +113,13 @@ export const TodoList = () => {
                   <Button variant="outline">Cancel</Button>
                 </DialogClose>
                 <DialogClose asChild>
-                  <Button onClick={handleAddTodo}>Add Todo</Button>
+                  <Button
+                    onClick={() =>
+                      handleAddTodo(newTodo, newVisibility, () => setNewTodo(""))
+                    }
+                  >
+                    Add Todo
+                  </Button>
                 </DialogClose>
               </DialogFooter>
             </DialogContent>
