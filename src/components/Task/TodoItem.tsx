@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Pencil, Trash, Circle, CheckCircle2 } from "lucide-react";
 
 export const TodoItem = ({
   id,
@@ -42,68 +43,75 @@ export const TodoItem = ({
     new Date(lastEditedAt).toISOString() !== new Date(created).toISOString();
 
   return (
-    <div className="flex items-center justify-between bg-white p-3 rounded shadow w-full">
-      <div className="flex flex-col gap-1 w-full">
-        {isEditing ? (
-          <Input
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            onBlur={handleEditSave}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleEditSave();
-              if (e.key === "Escape") setIsEditing(false);
-            }}
-            autoFocus
-          />
-        ) : (
-          <p
-            className={`font-medium break-words ${
-              completed ? "line-through text-muted-foreground" : ""
-            }`}
-            onDoubleClick={() => isAuthor && setIsEditing(true)}
+    <div className="flex items-start justify-between bg-white p-3 rounded shadow w-full">
+      {/* Completion Icon */}
+      <div className="flex items-start gap-3 w-full">
+        <button onClick={() => onToggleCompleted(id)} className="mt-1">
+          {completed ? (
+            <CheckCircle2 className="h-5 w-5 text-green-500" />
+          ) : (
+            <Circle className="h-5 w-5 text-gray-400" />
+          )}
+        </button>
+
+        <div className="flex flex-col gap-1 w-full">
+          {isEditing ? (
+            <Input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onBlur={handleEditSave}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleEditSave();
+                if (e.key === "Escape") setIsEditing(false);
+              }}
+              autoFocus
+            />
+          ) : (
+            <p
+              className={`font-medium break-words cursor-pointer ${
+                completed ? "line-through text-muted-foreground" : ""
+              }`}
+              onDoubleClick={() => isAuthor && setIsEditing(true)}
+            >
+              {title}
+            </p>
+          )}
+
+          {visibility === "public" && (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Created: {new Date(created).toLocaleString()}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                By: {authorName}
+                {isEdited && (
+                  <> • Last edited: {new Date(lastEditedAt!).toLocaleString()}</>
+                )}
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      {isAuthor && (
+        <div className="flex gap-2 items-center ml-4 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsEditing(true)}
           >
-            {title}
-          </p>
-        )}
-
-        {visibility === "public" && (
-          <>
-            <p className="text-xs text-muted-foreground">
-              Created: {new Date(created).toLocaleString()}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              By: {authorName}
-              {isEdited && (
-                <> • Last edited: {new Date(lastEditedAt!).toLocaleString()}</>
-              )}
-            </p>
-          </>
-        )}
-      </div>
-
-      <div className="flex gap-2 items-center ml-4 shrink-0">
-        <Button size="sm" onClick={() => onToggleCompleted(id)}>
-          {completed ? "Undo" : "Done"}
-        </Button>
-        {isAuthor && (
-          <>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setIsEditing(true)}
-            >
-              Edit
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => onDelete(id)}
-            >
-              Delete
-            </Button>
-          </>
-        )}
-      </div>
+            <Pencil className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onDelete(id)}
+          >
+            <Trash className="h-5 w-5 text-red-500" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

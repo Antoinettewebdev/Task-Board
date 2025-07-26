@@ -1,142 +1,106 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { TodoItem } from "@/components/task/TodoItem";
-import type { Todo, TodoVisibility } from "@/type/Todo";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { useTodos } from "@/hooks/todos/useTodo";
 import { pb } from "@/lib/pocketbase";
-import { useNavigate } from "@tanstack/react-router";
+import type { TodoVisibility } from "@/type/Todo";
+// import toast from 'sonner' or 'react-hot-toast'
+import { toast } from "sonner"; // Importing toast from sonner
+
+const TODOS_PER_PAGE = 5;
 
 export const TodoList = () => {
   const navigate = useNavigate();
-  const isLoggedIn = !!pb.authStore.token;
-  const userId = pb.authStore.record?.id;
+  const userId = pb.authStore.model?.id;
+  const isLoggedIn = !!userId;
+  // use toast directly from 'sonner'
+  // const { Toast } = toast(); // 👈 Get toast function
 
-  const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState("");
   const [newVisibility, setNewVisibility] = useState<TodoVisibility>("public");
-  const [viewFilter, setViewFilter] = useState<"all" | "public" | "private">(
-    "all"
-  );
+  const [viewFilter, setViewFilter] = useState<"all" | "public" | "private">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  useEffect(() => {
-    const fetchTodos = async () => {
-      try {
-        const publicTodos = await pb.collection("todos").getFullList<Todo>({
-          filter: 'visibility = "public"',
-          sort: "-created",
-        });
+  const { todos, createTodo, updateTodo, deleteTodo } = useTodos(userId);
 
-        const privateTodos = userId
-          ? await pb.collection("todos").getFullList<Todo>({
-              filter: `visibility = "private" && authorId = "${userId}"`,
-              sort: "-created",
-            })
-          : [];
-
-        setTodos([...publicTodos, ...privateTodos]);
-      } catch (err) {
-        console.error("Fetch failed", err);
-        setTodos([]);
-      }
-    };
-
-    fetchTodos();
-  }, [userId]);
-
-  useEffect(() => {
-    if (!userId) return;
-
-    let unsubscribe: () => void;
-
-    const subscribeToTodos = async () => {
-      unsubscribe = await pb.collection("todos").subscribe("*", (e) => {
-        const record = e.record as unknown as Todo;
-
-        const isUserPrivate =
-          record.visibility === "private" && record.authorId === userId;
-        const isPublic = record.visibility === "public";
-
-        if (!isPublic && !isUserPrivate) return;
-
-        setTodos((prev) => {
-          if (e.action === "create") {
-            const exists = prev.some((t) => t.id === record.id);
-            return exists ? prev : [record, ...prev];
-          }
-
-          if (e.action === "update") {
-            return prev.map((t) => (t.id === record.id ? record : t));
-          }
-
-          if (e.action === "delete") {
-            return prev.filter((t) => t.id !== record.id);
-          }
-
-          return prev;
-        });
-      });
-    };
-
-    subscribeToTodos();
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [userId]);
-
-  const handleAddTodo = async () => {
+  const handleAddTodo = () => {
     if (!newTodo.trim()) return;
 
-    try {
-      await pb.collection("todos").create({
+    createTodo.mutate(
+      {
         title: newTodo.trim(),
         visibility: newVisibility,
         completed: false,
         authorId: userId,
-        authorName: pb.authStore.record?.email,
+        authorName: pb.authStore.model?.email,
         lastEditedAt: new Date().toISOString(),
-      });
-
-      setNewTodo(""); // Let realtime handle UI update
-    } catch (err) {
-      console.error("Create failed", err);
-    }
+      },
+      {
+        onSuccess: () => {
+          toast("Todo created successfully!");
+          setNewTodo("");
+        },
+      }
+    );
   };
 
-  const handleToggleCompleted = async (id: string) => {
+  const handleToggleCompleted = (id: string) => {
     const todo = todos.find((t) => t.id === id);
     if (!todo) return;
 
-    try {
-      await pb.collection("todos").update(id, {
-        completed: !todo.completed,
-        lastEditedAt: new Date().toISOString(),
-      });
-    } catch (err) {
-      console.error("Toggle failed", err);
-    }
+    updateTodo.mutate(
+      {
+        id,
+        updates: {
+          completed: !todo.completed,
+          lastEditedAt: new Date().toISOString(),
+        },
+      },
+      {
+        onSuccess: () => {
+          toast(`Todo marked as ${!todo.completed ? "completed" : "incomplete"}`);
+        },
+      }
+    );
   };
 
-  const handleEdit = async (id: string, newTitle: string) => {
-    if (!newTitle.trim()) return;
-
-    try {
-      await pb.collection("todos").update(id, {
-        title: newTitle,
-        lastEditedAt: new Date().toISOString(),
-      });
-    } catch (err) {
-      console.error("Edit failed", err);
-    }
+  const handleEdit = (id: string, newTitle: string) => {
+    updateTodo.mutate(
+      {
+        id,
+        updates: {
+          title: newTitle,
+          lastEditedAt: new Date().toISOString(),
+        },
+      },
+      {
+        onSuccess: () => {
+          toast("Todo updated successfully!");
+        },
+      }
+    );
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await pb.collection("todos").delete(id);
-    } catch (err) {
-      console.error("Delete failed", err);
-    }
+  const handleDelete = (id: string) => {
+    deleteTodo.mutate(id, {
+      onSuccess: () => {
+        toast("Todo deleted successfully!");
+      },
+    });
   };
 
   const handleLogout = () => {
@@ -144,13 +108,26 @@ export const TodoList = () => {
     navigate({ to: "/login" });
   };
 
-  const filteredTodos = todos.filter((todo) => {
-    if (viewFilter === "all") return true;
-    if (viewFilter === "public") return todo.visibility === "public";
-    if (viewFilter === "private")
-      return todo.visibility === "private" && todo.authorId === userId;
-    return false;
-  });
+  const filteredTodos = todos
+    .filter((todo) => {
+      if (viewFilter === "public") return todo.visibility === "public";
+      if (viewFilter === "private") return todo.visibility === "private" && todo.authorId === userId;
+      return true;
+    })
+    .filter((todo) =>
+      todo.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      return sortOrder === "newest"
+        ? new Date(b.created).getTime() - new Date(a.created).getTime()
+        : new Date(a.created).getTime() - new Date(b.created).getTime();
+    });
+
+  const totalPages = Math.ceil(filteredTodos.length / TODOS_PER_PAGE);
+  const paginatedTodos = filteredTodos.slice(
+    (currentPage - 1) * TODOS_PER_PAGE,
+    currentPage * TODOS_PER_PAGE
+  );
 
   return (
     <div className="flex flex-col items-center h-screen bg-muted px-4">
@@ -166,48 +143,91 @@ export const TodoList = () => {
       <div className="h-20" />
 
       <Card className="w-full max-w-md">
-        <CardHeader>
+        <CardHeader className="flex justify-between items-center">
           <CardTitle>Todo List</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 flex gap-2">
-            <Input
-              placeholder="Enter a task..."
-              value={newTodo}
-              onChange={(e) => setNewTodo(e.target.value)}
-            />
-            <select
-              className="rounded border px-2 py-1 text-sm"
-              value={newVisibility}
-              onChange={(e) =>
-                setNewVisibility(e.target.value as TodoVisibility)
-              }
-            >
-              <option value="public">Public</option>
-              <option value="private">Private</option>
-            </select>
-            <Button onClick={handleAddTodo}>Add</Button>
-          </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>+ New Todo</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Todo</DialogTitle>
+              </DialogHeader>
 
-          <div className="flex justify-end mb-4">
-            <select
-              className="rounded border px-2 py-1 text-sm"
-              value={viewFilter}
-              onChange={(e) =>
-                setViewFilter(e.target.value as "all" | "public" | "private")
-              }
-            >
-              <option value="all">All</option>
-              <option value="public">Public</option>
-              <option value="private">Private</option>
-            </select>
+              <div className="space-y-3">
+                <Input
+                  placeholder="Enter a task..."
+                  value={newTodo}
+                  onChange={(e) => setNewTodo(e.target.value)}
+                />
+                <select
+                  className="rounded border px-2 py-1 text-sm"
+                  value={newVisibility}
+                  onChange={(e) =>
+                    setNewVisibility(e.target.value as TodoVisibility)
+                  }
+                >
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
+                </select>
+              </div>
+
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button onClick={handleAddTodo}>Add Todo</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+
+        <CardContent>
+          <div className="flex flex-col gap-2 mb-4">
+            <Input
+              placeholder="Search todos..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full"
+            />
+            <div className="flex gap-2">
+              <select
+                value={viewFilter}
+                onChange={(e) => {
+                  setViewFilter(e.target.value as "all" | "public" | "private");
+                  setCurrentPage(1);
+                }}
+                className="rounded border px-2 py-1 text-sm flex-1"
+              >
+                <option value="all">All</option>
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+
+              <select
+                value={sortOrder}
+                onChange={(e) => {
+                  setSortOrder(e.target.value as "newest" | "oldest");
+                  setCurrentPage(1);
+                }}
+                className="rounded border px-2 py-1 text-sm flex-1"
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+              </select>
+            </div>
           </div>
 
           <div className="space-y-2">
-            {filteredTodos.length === 0 ? (
-              <p className="text-center text-muted-foreground">No todos yet</p>
+            {paginatedTodos.length === 0 ? (
+              <p className="text-center text-muted-foreground">No todos found</p>
             ) : (
-              filteredTodos.map((todo) => (
+              paginatedTodos.map((todo) => (
                 <TodoItem
                   key={todo.id}
                   {...todo}
@@ -220,6 +240,28 @@ export const TodoList = () => {
               ))
             )}
           </div>
+
+          {filteredTodos.length > TODOS_PER_PAGE && (
+            <div className="flex justify-between mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
