@@ -18,6 +18,7 @@ export const useRegisterForm = () => {
     navigate({ to: "/login" });
   };
 
+  // Register mutation
   const registerMutation = useMutation({
     mutationFn: async ({ email, password, confirmPassword }: RegisterInput) => {
       return await pb.collection("users").create({
@@ -30,7 +31,6 @@ export const useRegisterForm = () => {
     onError: (error: unknown) => {
       let message = "Registration failed. Please try again.";
       if (error instanceof Error) {
-        // Check for PocketBase structured error
         type PocketBaseError = Error & {
           response?: {
             data?: {
@@ -52,6 +52,23 @@ export const useRegisterForm = () => {
     },
   });
 
+  // Google register mutation
+  const googleRegisterMutation = useMutation({
+    mutationFn: async () => {
+      return await pb
+        .collection("users")
+        .authWithOAuth2({ provider: "google" });
+    },
+    onSuccess,
+    onError: (error: unknown) => {
+      let message = "Google registration failed. Please try again.";
+      if (error instanceof Error && error.message) {
+        message = error.message;
+      }
+      setFormError(message);
+    },
+  });
+
   const form = useForm({
     defaultValues: {
       email: "",
@@ -60,20 +77,21 @@ export const useRegisterForm = () => {
     },
     onSubmit: ({ value }) => {
       setFormError(null);
-
       if (value.password !== value.confirmPassword) {
         setFormError("Passwords do not match.");
         return;
       }
-
       registerMutation.mutate(value);
     },
   });
 
+  // Expose googleLoading and handleGoogleSignUp for Register.tsx
   return {
     form,
     formError,
     setFormError,
     loading: registerMutation.isPending,
+    googleLoading: googleRegisterMutation.isPending,
+    handleGoogleSignUp: () => googleRegisterMutation.mutate(),
   };
 };
